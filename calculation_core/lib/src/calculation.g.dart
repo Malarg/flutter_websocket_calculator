@@ -16,6 +16,7 @@ Calculation _$CalculationFromJson(Map<String, dynamic> json) {
     json['timestamp'] == null
         ? null
         : DateTime.parse(json['timestamp'] as String),
+    result: (json['result'] as num)?.toDouble(),
   );
 }
 
@@ -25,6 +26,7 @@ Map<String, dynamic> _$CalculationToJson(Calculation instance) =>
       'value': instance.value,
       'user': instance.user,
       'timestamp': instance.timestamp?.toIso8601String(),
+      'result': instance.result,
     };
 
 T _$enumDecode<T>(

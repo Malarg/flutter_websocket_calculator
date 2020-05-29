@@ -99,6 +99,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "7.1.0"
+  calculation_core:
+    dependency: "direct main"
+    description:
+      path: "../calculation_core"
+      relative: true
+    source: path
+    version: "1.0.0"
   charcode:
     dependency: transitive
     description:
@@ -555,4 +562,4 @@ packages:
     source: hosted
     version: "2.2.1"
 sdks:
-  dart: ">=2.7.0 <3.0.0"
+  dart: ">=2.8.1 <3.0.0"

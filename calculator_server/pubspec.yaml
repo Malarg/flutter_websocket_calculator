@@ -9,6 +9,9 @@ environment:
 dependencies:
   json_annotation: ^3.0.0
   aqueduct: 3.3.0+1
+  calculation_core:
+    path:
+      ../calculation_core/
 
 dev_dependencies:
   test: ^1.0.0

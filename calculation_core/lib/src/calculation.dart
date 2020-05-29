@@ -1,4 +1,4 @@
-import 'package:calculator_server/calculator_server.dart';
+import 'package:calculation_core/calculation_core.dart';
 
 part 'calculation.g.dart';
 
