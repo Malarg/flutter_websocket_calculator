@@ -6,8 +6,8 @@ part of 'calculation.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Calculation _$CalculationFromJson(Map<String, dynamic> json) {
-  return Calculation(
+CalculationHistory _$CalculationHistoryFromJson(Map<String, dynamic> json) {
+  return CalculationHistory(
     _$enumDecodeNullable(_$CalculationTypeEnumMap, json['calculationType']),
     (json['value'] as num)?.toDouble(),
     json['user'] == null
@@ -20,7 +20,7 @@ Calculation _$CalculationFromJson(Map<String, dynamic> json) {
   );
 }
 
-Map<String, dynamic> _$CalculationToJson(Calculation instance) =>
+Map<String, dynamic> _$CalculationHistoryToJson(CalculationHistory instance) =>
     <String, dynamic>{
       'calculationType': _$CalculationTypeEnumMap[instance.calculationType],
       'value': instance.value,
@@ -69,3 +69,18 @@ const _$CalculationTypeEnumMap = {
   CalculationType.pow: 'pow',
   CalculationType.zero: 'zero',
 };
+
+CalculationRequest _$CalculationRequestFromJson(Map<String, dynamic> json) {
+  return CalculationRequest(
+    json['userId'] as int,
+    _$enumDecodeNullable(_$CalculationTypeEnumMap, json['calculationType']),
+    (json['calculationValue'] as num)?.toDouble(),
+  );
+}
+
+Map<String, dynamic> _$CalculationRequestToJson(CalculationRequest instance) =>
+    <String, dynamic>{
+      'userId': instance.userId,
+      'calculationType': _$CalculationTypeEnumMap[instance.calculationType],
+      'calculationValue': instance.calculationValue,
+    };

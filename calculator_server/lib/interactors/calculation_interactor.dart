@@ -1,29 +1,26 @@
 import 'package:calculator_server/calculator_server.dart';
 
-class CalculationController extends ResourceController {
-  CalculationController();
+class CalculationInteractor {
+  CalculationInteractor();
 
   final _calculationRepository = CalculationRepository();
   final _userRepository = UserRepository();
 
-  @Operation.get()
-  Future<Response> getCalculations() async {
-    return Response.ok(_calculationRepository.get().map((e) => e.toJson()));
-  }
+  List<CalculationHistory> getCalculations() => _calculationRepository.get();
 
-  @Operation.post()
-  Future<Response> insertCalculation(Calculation calculation) async {
+  CalculationHistory insertCalculation(CalculationRequest calculation) {
+    User user;
+    try {
+      user = _userRepository.get().firstWhere((element) => element.id == calculation.userId);
+    } catch(e) {
+      return null;
+    }
     final lastResult = _calculationRepository.get().isEmpty
         ? 0.0
         : _calculationRepository.get().last.result;
-    _calculationRepository.insert(calculation);
-    final isUserExist = _userRepository.get().map((e) => e.id).contains(calculation.user.id);
-    if (isUserExist) {
-      return Response.ok(_calculate(calculation.calculationType, calculation.value,
-        lastResult));
-    } else {
-      return Response.unauthorized();
-    }
+    final calculationHistory = CalculationHistory(calculation.calculationType, calculation.calculationValue, user, DateTime.now(), _calculate(calculation.calculationType, calculation.calculationValue, lastResult));
+    _calculationRepository.insert(calculationHistory);
+    return calculationHistory;
   }
 
   double _calculate(CalculationType type, double value, double lastResult) {

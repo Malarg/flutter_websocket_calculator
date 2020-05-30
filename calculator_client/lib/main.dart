@@ -1,6 +1,8 @@
 import 'package:calculator_client/widgets/number_button.dart';
 import 'package:flutter/material.dart';
 
+import 'main_bloc.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -30,13 +32,24 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final bloc = MainBloc();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
+      body: StreamBuilder<MainScreenState>(
+        builder: (context, snapshot) { return _buildCalc(snapshot.data); }, 
+        stream: bloc.state, 
+        initialData: MainScreenDataState()
+      ),
+    );
+  }
+
+  Widget _buildCalc(MainScreenDataState data) {
+    return Center(
           child: Column(
         children: <Widget>[
           Container(
@@ -44,7 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
             color: Color(0xFF9BA6FA),
             width: double.infinity,
             child: Text(
-              '100500',
+              data.calculationValue,
               style: TextStyle(fontSize: 40, color: Colors.white),
               textAlign: TextAlign.end,
               textWidthBasis: TextWidthBasis.parent,
@@ -53,13 +66,27 @@ class _MyHomePageState extends State<MyHomePage> {
           Row(
             children: <Widget>[
               Expanded(
-                child: NumberButton("1", () => {}),
+                child: NumberButton("C", () => {}),
+                flex: 2,
               ),
               Expanded(
-                child: NumberButton("2", () => {}),
+                child: NumberButton("^", () => {}),
               ),
               Expanded(
-                child: NumberButton("3", () => {}),
+                child: NumberButton("<", () => {bloc.removeLastDigit()}),
+              )
+            ],
+          ),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: NumberButton("1", () => {bloc.addDigit("1")}),
+              ),
+              Expanded(
+                child: NumberButton("2", () => {bloc.addDigit("2")}),
+              ),
+              Expanded(
+                child: NumberButton("3", () => {bloc.addDigit("3")}),
               ),
               Expanded(
                 child: NumberButton("+", () => {}),
@@ -69,13 +96,13 @@ class _MyHomePageState extends State<MyHomePage> {
           Row(
             children: <Widget>[
               Expanded(
-                child: NumberButton("4", () => {}),
+                child: NumberButton("4", () => {bloc.addDigit("4")}),
               ),
               Expanded(
-                child: NumberButton("5", () => {}),
+                child: NumberButton("5", () => {bloc.addDigit("5")}),
               ),
               Expanded(
-                child: NumberButton("6", () => {}),
+                child: NumberButton("6", () => {bloc.addDigit("6")}),
               ),
               Expanded(
                 child: NumberButton("-", () => {}),
@@ -85,13 +112,13 @@ class _MyHomePageState extends State<MyHomePage> {
           Row(
             children: <Widget>[
               Expanded(
-                child: NumberButton("7", () => {}),
+                child: NumberButton("7", () => {bloc.addDigit("7")}),
               ),
               Expanded(
-                child: NumberButton("8", () => {}),
+                child: NumberButton("8", () => {bloc.addDigit("8")}),
               ),
               Expanded(
-                child: NumberButton("9", () => {}),
+                child: NumberButton("9", () => {bloc.addDigit("9")}),
               ),
               Expanded(
                 child: NumberButton("*", () => {}),
@@ -101,31 +128,20 @@ class _MyHomePageState extends State<MyHomePage> {
           Row(
             children: <Widget>[
               Expanded(
-                child: NumberButton(".", () => {}),
+                child: NumberButton(".", () => {bloc.addDigit(".")}),
               ),
               Expanded(
-                child: NumberButton("0", () => {}),
+                child: NumberButton("0", () => {bloc.addDigit("0")}),
+              ),
+              Expanded(
+                child: NumberButton("=", () => {}),
               ),
               Expanded(
                 child: NumberButton("/", () => {}),
               ),
-              Expanded(
-                child: NumberButton("^", () => {}),
-              ),
-            ],
-          ),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: NumberButton("C", () => {}),
-              ),
-              Expanded(
-                child: NumberButton("=", () => {}),
-              )
             ],
           )
         ],
-      )),
-    );
+      ));
   }
 }

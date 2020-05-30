@@ -20,3 +20,7 @@ export 'channel.dart';
 export 'data/calculation_repository.dart';
 
 export 'data/user_repository.dart';
+
+export 'interactors/calculation_interactor.dart';
+
+export 'interactors/user_interactor.dart';

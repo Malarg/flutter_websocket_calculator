@@ -9,11 +9,11 @@ class CalculationRepository {
 
   static final _singleton = CalculationRepository._internal();
 
-  static final _calculations = <Calculation>[];
+  static final _calculations = <CalculationHistory>[];
 
-  List<Calculation> get() => _calculations;
+  List<CalculationHistory> get() => _calculations;
 
-  Calculation insert(Calculation calculation) {
+  CalculationHistory insert(CalculationHistory calculation) {
     _calculations.add(calculation);
     return calculation;
   }
