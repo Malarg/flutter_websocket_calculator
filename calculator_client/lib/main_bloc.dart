@@ -1,15 +1,30 @@
 import 'dart:async';
 
+import 'dart:convert';
+
 import 'package:calculation_core/calculation_core.dart';
+
+import 'package:web_socket_channel/io.dart';
 
 class MainBloc {
   final _stateStreamController = StreamController<MainScreenState>();
 
   Stream<MainScreenState> get state => _stateStreamController.stream;
+  IOWebSocketChannel channel;
 
   var data = MainScreenDataState();
 
+  void connect(String name) async {
+    channel = IOWebSocketChannel.connect("ws://192.168.0.102:8888/connect", headers: {"Authorization": "Bearer $name"});
+    channel.stream.listen((event) {
+      print(event);
+    });
+    _stateStreamController.add(MainScreenDataState());
+    print(channel);
+  }
+
   void addDigit(String digit) {
+    channel.sink.add(json.encode(User.named(digit).toJson()));
     if (data.calculationValue.contains(".") && digit == ".") {
       return;
     }

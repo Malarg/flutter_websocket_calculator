@@ -26,6 +26,8 @@ dependencies:
   calculation_core:
     path:
       ../calculation_core/
+  http: ^0.12.1
+  web_socket_channel: ^1.1.0
 
 
   # The following adds the Cupertino Icons font to your application.

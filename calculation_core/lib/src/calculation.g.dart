@@ -16,7 +16,7 @@ CalculationHistory _$CalculationHistoryFromJson(Map<String, dynamic> json) {
     json['timestamp'] == null
         ? null
         : DateTime.parse(json['timestamp'] as String),
-    result: (json['result'] as num)?.toDouble(),
+    (json['result'] as num)?.toDouble(),
   );
 }
 
