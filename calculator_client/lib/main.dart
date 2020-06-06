@@ -1,3 +1,6 @@
+import 'package:calculation_core/calculation_core.dart';
+import 'package:calculator_client/strings.dart';
+import 'package:calculator_client/widgets/item_history.dart';
 import 'package:calculator_client/widgets/number_button.dart';
 import 'package:flutter/material.dart';
 
@@ -8,7 +11,6 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -17,7 +19,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Calculator'),
+      home: MyHomePage(title: Strings.CALCULATOR),
     );
   }
 }
@@ -43,113 +45,204 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: StreamBuilder<MainScreenState>(
           builder: (ctx, snapshot) {
+            _handleError(ctx, snapshot.data);
             if (snapshot.data is MainScreenIntroState) {
               Future.delayed(Duration.zero, () {
-              showDialog(
-                  context: ctx,
-                  barrierDismissible: false,
-                  builder: (BuildContext context) {
-                    return getIntroAlertDialog(ctx);
-                  });
-            });
+                showDialog(
+                    context: ctx,
+                    barrierDismissible: false,
+                    builder: (BuildContext context) {
+                      return getIntroAlertDialog(ctx);
+                    });
+              });
             }
-            return _buildCalc();
+            return _buildCalc(snapshot.data);
           },
           stream: bloc.state,
           initialData: MainScreenIntroState()),
     );
   }
 
-  Widget _buildCalc() {
+  void _handleError(BuildContext context, MainScreenState state) {
+    if (!(state is MainScreenErrorState)) {
+      return;
+    }
+    final errorState = state as MainScreenErrorState;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Scaffold.of(context).showSnackBar(SnackBar(
+        content: Text(errorState.snackMessage),
+        action: SnackBarAction(
+          label: errorState.snackActionText ?? "",
+          onPressed: errorState.snackAction ?? () {},
+        ),
+      ));
+
+      if (errorState.shouldHideSnack) {
+        Future.delayed(Duration(seconds: 2), () {
+          Scaffold.of(context).hideCurrentSnackBar();
+        });
+      }
+    });
+  }
+
+  Widget _buildCalc(MainScreenState state) {
+    ScrollController _scrollController = ScrollController();
+    final isNumberButtonEnabled = state is MainScreenState &&
+        (!state.isResultDisplayed || state.calculationType != null);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 500), curve: Curves.easeOut);
+    });
     return Center(
         child: Column(
       children: <Widget>[
+        Expanded(
+          child: ListView.builder(
+              padding: const EdgeInsets.all(8),
+              controller: _scrollController,
+              itemCount: state.history.length,
+              itemBuilder: (BuildContext context, int index) {
+                return CalculationHistoryWidget(state.history[index]);
+              }),
+        ),
         Container(
           padding: EdgeInsets.fromLTRB(4, 4, 4, 4),
           color: Color(0xFF9BA6FA),
           width: double.infinity,
           child: Text(
-            "data.calculationValue",
+            state.calculationValue,
             style: TextStyle(fontSize: 40, color: Colors.white),
             textAlign: TextAlign.end,
             textWidthBasis: TextWidthBasis.parent,
+            maxLines: 1,
           ),
         ),
         Row(
           children: <Widget>[
             Expanded(
-              child: NumberButton("C", () => {}),
+              child: NumberButton(Strings.C,
+                  () {bloc.setCalculationType(CalculationType.zero); bloc.calculate();}),
               flex: 2,
             ),
             Expanded(
-              child: NumberButton("^", () => {}),
+              child: NumberButton(Strings.POW,
+                  () => {bloc.setCalculationType(CalculationType.pow)}),
             ),
             Expanded(
-              child: NumberButton("<", () => {bloc.removeLastDigit()}),
+              child: NumberButton(Strings.BACK, () => {bloc.removeLastDigit()}),
             )
           ],
         ),
         Row(
           children: <Widget>[
             Expanded(
-              child: NumberButton("1", () => {bloc.addDigit("1")}),
+              child: NumberButton(
+                  Strings.ONE,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.ONE)}
+                      : null),
             ),
             Expanded(
-              child: NumberButton("2", () => {bloc.addDigit("2")}),
+              child: NumberButton(
+                  Strings.TWO,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.TWO)}
+                      : null),
             ),
             Expanded(
-              child: NumberButton("3", () => {bloc.addDigit("3")}),
+              child: NumberButton(
+                  Strings.THREE,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.THREE)}
+                      : null),
             ),
             Expanded(
-              child: NumberButton("+", () => {}),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: NumberButton("4", () => {bloc.addDigit("4")}),
-            ),
-            Expanded(
-              child: NumberButton("5", () => {bloc.addDigit("5")}),
-            ),
-            Expanded(
-              child: NumberButton("6", () => {bloc.addDigit("6")}),
-            ),
-            Expanded(
-              child: NumberButton("-", () => {}),
+              child: NumberButton(Strings.PLUS,
+                  () => {bloc.setCalculationType(CalculationType.plus)}),
             ),
           ],
         ),
         Row(
           children: <Widget>[
             Expanded(
-              child: NumberButton("7", () => {bloc.addDigit("7")}),
+              child: NumberButton(
+                  Strings.FOUR,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.FOUR)}
+                      : null),
             ),
             Expanded(
-              child: NumberButton("8", () => {bloc.addDigit("8")}),
+              child: NumberButton(
+                  Strings.FIVE,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.FIVE)}
+                      : null),
             ),
             Expanded(
-              child: NumberButton("9", () => {bloc.addDigit("9")}),
+              child: NumberButton(
+                  Strings.SIX,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.SIX)}
+                      : null),
             ),
             Expanded(
-              child: NumberButton("*", () => {}),
+              child: NumberButton(Strings.MINUS,
+                  () => {bloc.setCalculationType(CalculationType.minus)}),
             ),
           ],
         ),
         Row(
           children: <Widget>[
             Expanded(
-              child: NumberButton(".", () => {bloc.addDigit(".")}),
+              child: NumberButton(
+                  Strings.SEVEN,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.SEVEN)}
+                      : null),
             ),
             Expanded(
-              child: NumberButton("0", () => {bloc.addDigit("0")}),
+              child: NumberButton(
+                  Strings.EIGHT,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.EIGHT)}
+                      : null),
             ),
             Expanded(
-              child: NumberButton("=", () => {}),
+              child: NumberButton(
+                  Strings.NINE,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.NINE)}
+                      : null),
             ),
             Expanded(
-              child: NumberButton("/", () => {}),
+              child: NumberButton(Strings.MULTIPLY,
+                  () => {bloc.setCalculationType(CalculationType.multiply)}),
+            ),
+          ],
+        ),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: NumberButton(
+                  Strings.DOT,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.DOT)}
+                      : null),
+            ),
+            Expanded(
+              child: NumberButton(
+                  Strings.ZERO,
+                  isNumberButtonEnabled
+                      ? () => {bloc.addDigit(Strings.ZERO)}
+                      : null),
+            ),
+            Expanded(
+              child: NumberButton(Strings.EQUALS, () => {bloc.calculate()}),
+            ),
+            Expanded(
+              child: NumberButton(Strings.DIVIDE,
+                  () => {bloc.setCalculationType(CalculationType.divide)}),
             ),
           ],
         )
@@ -159,42 +252,45 @@ class _MyHomePageState extends State<MyHomePage> {
 
   String userName = "";
   final introDialogTextEditingController = TextEditingController();
-  AlertDialog getIntroAlertDialog(BuildContext context) {
+  Widget getIntroAlertDialog(BuildContext context) {
     introDialogTextEditingController.addListener(() {
       userName = introDialogTextEditingController.text;
     });
-    return AlertDialog(
-      title: Text("Добро пожаловать"),
-      content: Container(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Container(
-                width: double.infinity,
-                child: Text("Введите имя: ", textAlign: TextAlign.start)),
-            TextField(
-              controller: introDialogTextEditingController,
-            )
+    return WillPopScope(
+        child: AlertDialog(
+          title: Text("Добро пожаловать"),
+          content: Container(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                    width: double.infinity,
+                    child: Text("Введите имя: ", textAlign: TextAlign.start)),
+                TextField(
+                  controller: introDialogTextEditingController,
+                )
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('OK'),
+              onPressed: () {
+                if (userName.isEmpty) {
+                  // todo это логика
+                  Scaffold.of(context)
+                      .showSnackBar(SnackBar(content: Text("Выберите имя")));
+                  Future.delayed(Duration(seconds: 2), () {
+                    Scaffold.of(context).hideCurrentSnackBar();
+                  });
+                } else {
+                  bloc.connect(userName);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
           ],
         ),
-      ),
-      actions: <Widget>[
-        FlatButton(
-          child: Text('OK'),
-          onPressed: () {
-            if (userName.isEmpty) {
-              Scaffold.of(context)
-                  .showSnackBar(SnackBar(content: Text("Выберите имя")));
-              Future.delayed(Duration(seconds: 2), () {
-                Scaffold.of(context).hideCurrentSnackBar();
-              });
-            } else {
-              bloc.connect(userName);
-              Navigator.of(context).pop();
-            }
-          },
-        ),
-      ],
-    );
+        onWillPop: () {});
   }
 }
