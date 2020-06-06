@@ -9,4 +9,6 @@ export 'src/calculation.dart';
 
 export 'src/user.dart';
 
+export 'src/error_message.dart';
+
 // TODO: Export any libraries intended for clients of this package.

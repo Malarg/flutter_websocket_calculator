@@ -9,7 +9,7 @@ class CalculationRepository {
 
   static final _singleton = CalculationRepository._internal();
 
-  static final _calculations = <CalculationHistory>[];
+  static final _calculations = <CalculationHistory>[CalculationHistory(CalculationType.zero, 0, User(0, ""), DateTime.now(), 0)];
 
   List<CalculationHistory> get() => _calculations;
 

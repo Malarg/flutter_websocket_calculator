@@ -15,6 +15,8 @@ export 'package:calculation_core/src/user.dart';
 
 export 'package:calculation_core/src/calculation.dart';
 
+export 'package:calculation_core/src/error_message.dart';
+
 export 'channel.dart';
 
 export 'data/calculation_repository.dart';
