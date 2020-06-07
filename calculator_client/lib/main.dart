@@ -39,45 +39,46 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: StreamBuilder<MainScreenState>(
-          builder: (ctx, snapshot) {
-            _handleError(ctx, snapshot.data);
-            if (snapshot.data is MainScreenIntroState) {
-              Future.delayed(Duration.zero, () {
-                showDialog(
-                    context: ctx,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) {
-                      return getIntroAlertDialog(ctx);
-                    });
-              });
-            }
-            return _buildCalc(snapshot.data);
-          },
-          stream: bloc.state,
-          initialData: MainScreenIntroState()),
-    );
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+          title: Text(widget.title),
+        ),
+        body: StreamBuilder<SnackData>(
+            builder: (context, snapshot) {
+              if (snapshot.data != null) {
+                _showSnack(context, snapshot.data);
+              }
+              return StreamBuilder<MainScreenState>(
+                  builder: (ctx, snapshot) {
+                    if (snapshot.data is MainScreenIntroState) {
+                      Future.delayed(Duration.zero, () {
+                        showDialog(
+                            context: ctx,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                              return getIntroAlertDialog(ctx);
+                            });
+                      });
+                    }
+                    return _buildCalc();
+                  },
+                  stream: bloc.stateStream,
+                  initialData: MainScreenIntroState());
+            },
+            stream: bloc.snackStream));
   }
 
-  void _handleError(BuildContext context, MainScreenState state) {
-    if (!(state is MainScreenErrorState)) {
-      return;
-    }
-    final errorState = state as MainScreenErrorState;
+  void _showSnack(BuildContext context, SnackData data) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Scaffold.of(context).showSnackBar(SnackBar(
-        content: Text(errorState.snackMessage),
+        content: Text(data.snackMessage),
         action: SnackBarAction(
-          label: errorState.snackActionText ?? "",
-          onPressed: errorState.snackAction ?? () {},
+          label: data.snackActionText ?? "",
+          onPressed: data.snackAction ?? () {},
         ),
       ));
 
-      if (errorState.shouldHideSnack) {
+      if (data.shouldHideSnack) {
         Future.delayed(Duration(seconds: 2), () {
           Scaffold.of(context).hideCurrentSnackBar();
         });
@@ -85,169 +86,242 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Widget _buildCalc(MainScreenState state) {
+  Widget _buildCalc() {
     ScrollController _scrollController = ScrollController();
-    final isNumberButtonEnabled = state is MainScreenState &&
-        (!state.isResultDisplayed || state.calculationType != null);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.animateTo(_scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 500), curve: Curves.easeOut);
-    });
-    return Center(
-        child: Column(
+    return Column(
       children: <Widget>[
-        Expanded(
-          child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              controller: _scrollController,
-              itemCount: state.history.length,
-              itemBuilder: (BuildContext context, int index) {
-                return CalculationHistoryWidget(state.history[index]);
-              }),
+        StreamBuilder<List<CalculationHistory>>(
+          builder: (context, historySnapshot) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _scrollController.animateTo(
+                  _scrollController.position.maxScrollExtent,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOut);
+            });
+            return Expanded(
+              child: ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  controller: _scrollController,
+                  itemCount: historySnapshot.data.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    return CalculationHistoryWidget(
+                        historySnapshot.data[index]);
+                  }),
+            );
+          },
+          stream: bloc.historyStream,
+          initialData: [],
         ),
-        Container(
-          padding: EdgeInsets.fromLTRB(4, 4, 4, 4),
-          color: Color(0xFF9BA6FA),
-          width: double.infinity,
-          child: Text(
-            state.calculationValue,
-            style: TextStyle(fontSize: 40, color: Colors.white),
-            textAlign: TextAlign.end,
-            textWidthBasis: TextWidthBasis.parent,
-            maxLines: 1,
-          ),
+        StreamBuilder<String>(
+          builder: (context, valueSnapshot) {
+            return Container(
+              padding: EdgeInsets.fromLTRB(4, 4, 4, 4),
+              color: Color(0xFF9BA6FA),
+              width: double.infinity,
+              child: Text(
+                valueSnapshot.data,
+                style: TextStyle(fontSize: 40, color: Colors.white),
+                textAlign: TextAlign.end,
+                textWidthBasis: TextWidthBasis.parent,
+                maxLines: 1,
+              ),
+            );
+          },
+          stream: bloc.calculationValueStream,
+          initialData: Strings.ZERO,
         ),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: NumberButton(Strings.C,
-                  () {bloc.setCalculationType(CalculationType.zero); bloc.calculate();}),
-              flex: 2,
-            ),
-            Expanded(
-              child: NumberButton(Strings.POW,
-                  () => {bloc.setCalculationType(CalculationType.pow)}),
-            ),
-            Expanded(
-              child: NumberButton(Strings.BACK, () => {bloc.removeLastDigit()}),
-            )
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: NumberButton(
-                  Strings.ONE,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.ONE)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(
-                  Strings.TWO,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.TWO)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(
-                  Strings.THREE,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.THREE)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(Strings.PLUS,
-                  () => {bloc.setCalculationType(CalculationType.plus)}),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: NumberButton(
-                  Strings.FOUR,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.FOUR)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(
-                  Strings.FIVE,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.FIVE)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(
-                  Strings.SIX,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.SIX)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(Strings.MINUS,
-                  () => {bloc.setCalculationType(CalculationType.minus)}),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: NumberButton(
-                  Strings.SEVEN,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.SEVEN)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(
-                  Strings.EIGHT,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.EIGHT)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(
-                  Strings.NINE,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.NINE)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(Strings.MULTIPLY,
-                  () => {bloc.setCalculationType(CalculationType.multiply)}),
-            ),
-          ],
-        ),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: NumberButton(
-                  Strings.DOT,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.DOT)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(
-                  Strings.ZERO,
-                  isNumberButtonEnabled
-                      ? () => {bloc.addDigit(Strings.ZERO)}
-                      : null),
-            ),
-            Expanded(
-              child: NumberButton(Strings.EQUALS, () => {bloc.calculate()}),
-            ),
-            Expanded(
-              child: NumberButton(Strings.DIVIDE,
-                  () => {bloc.setCalculationType(CalculationType.divide)}),
-            ),
-          ],
+        StreamBuilder<bool>(
+          builder: (context, digitsEnabledSnapshot) {
+            return StreamBuilder<bool>(
+              builder: (context, calculationsEnabledSnapshot) {
+                return Center(
+                    child: Column(
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: NumberButton(
+                              Strings.C,
+                              calculationsEnabledSnapshot.data
+                                  ? () {
+                                      bloc.setCalculationType(
+                                          CalculationType.zero);
+                                      bloc.calculate();
+                                    }
+                                  : null),
+                          flex: 2,
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.POW,
+                              calculationsEnabledSnapshot.data
+                                  ? () => {
+                                        bloc.setCalculationType(
+                                            CalculationType.pow)
+                                      }
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.BACK,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.removeLastDigit()}
+                                  : null),
+                        )
+                      ],
+                    ),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: NumberButton(
+                              Strings.ONE,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.ONE)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.TWO,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.TWO)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.THREE,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.THREE)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.PLUS,
+                              calculationsEnabledSnapshot.data
+                                  ? () => {
+                                        bloc.setCalculationType(
+                                            CalculationType.plus)
+                                      }
+                                  : null),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: NumberButton(
+                              Strings.FOUR,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.FOUR)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.FIVE,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.FIVE)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.SIX,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.SIX)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.MINUS,
+                              calculationsEnabledSnapshot.data
+                                  ? () => {
+                                        bloc.setCalculationType(
+                                            CalculationType.minus)
+                                      }
+                                  : null),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: NumberButton(
+                              Strings.SEVEN,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.SEVEN)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.EIGHT,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.EIGHT)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.NINE,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.NINE)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.MULTIPLY,
+                              calculationsEnabledSnapshot.data
+                                  ? () => {
+                                        bloc.setCalculationType(
+                                            CalculationType.multiply)
+                                      }
+                                  : null),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: NumberButton(
+                              Strings.DOT,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.DOT)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.ZERO,
+                              digitsEnabledSnapshot.data
+                                  ? () => {bloc.addDigit(Strings.ZERO)}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.EQUALS,
+                              calculationsEnabledSnapshot.data
+                                  ? () => {bloc.calculate()}
+                                  : null),
+                        ),
+                        Expanded(
+                          child: NumberButton(
+                              Strings.DIVIDE,
+                              calculationsEnabledSnapshot.data
+                                  ? () => {
+                                        bloc.setCalculationType(
+                                            CalculationType.divide)
+                                      }
+                                  : null),
+                        ),
+                      ],
+                    )
+                  ],
+                ));
+              },
+              stream: bloc.areCalculationsEnabledStream,
+              initialData: false,
+            );
+          },
+          stream: bloc.areDigitsEnabledStream,
+          initialData: false,
         )
       ],
-    ));
+    );
   }
 
   String userName = "";

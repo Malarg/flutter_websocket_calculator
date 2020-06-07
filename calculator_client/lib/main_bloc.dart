@@ -10,97 +10,147 @@ import 'package:web_socket_channel/io.dart';
 
 class MainBloc {
   final _stateStreamController = StreamController<MainScreenState>();
-  Stream<MainScreenState> get state => _stateStreamController.stream;
-  
+  Stream<MainScreenState> get stateStream => _stateStreamController.stream;
+
+  final _areDigitsButtonsEnabledStreamController = StreamController<bool>();
+  Stream<bool> get areDigitsEnabledStream =>
+      _areDigitsButtonsEnabledStreamController.stream;
+
+  final _areCalculationsButtonsEnabledStreamController =
+      StreamController<bool>();
+  Stream<bool> get areCalculationsEnabledStream =>
+      _areCalculationsButtonsEnabledStreamController.stream;
+
+  List<CalculationHistory> _historyList = [];
+  List<CalculationHistory> get history => _historyList;
+  set history(List<CalculationHistory> value) {
+    _historyList = value;
+    _historyStreamController.sink.add(_historyList);
+  }
+
+  void addHistory(CalculationHistory value) {
+    _historyList.add(value);
+    _historyStreamController.sink.add(_historyList);
+  }
+
+  final _historyStreamController = StreamController<List<CalculationHistory>>();
+  Stream<List<CalculationHistory>> get historyStream =>
+      _historyStreamController.stream;
+
+  String _calculationValueString = Strings.ZERO;
+  String get calculationValue => _calculationValueString;
+  set calculationValue(String value) {
+    _calculationValueString = value;
+    _calculationValueStreamController.sink.add(_calculationValueString);
+  }
+
+  final _calculationValueStreamController = StreamController<String>();
+  Stream<String> get calculationValueStream =>
+      _calculationValueStreamController.stream;
+
+  final _snackStreamController = StreamController<SnackData>();
+  Stream<SnackData> get snackStream => _snackStreamController.stream;
+
+  CalculationType _calculationType;
+
+  bool _isResultDisplayed = true;
+
+  User user;
+
   IOWebSocketChannel channel;
 
-  var data = MainScreenState();
-
   void connect(String name) async {
-    channel = IOWebSocketChannel.connect("ws://192.168.1.9:8888/connect", headers: {"Authorization": "Bearer $name"});
+    channel = IOWebSocketChannel.connect("ws://192.168.1.9:8888/connect",
+        headers: {"Authorization": "Bearer $name"});
     channel.stream.listen((event) {
       final map = json.decode(event) as Map<String, dynamic>;
-      
-      final isUser = map.containsKey("name"); //TODO прогуглить нормальный способ определения
+
+      final isUser = map
+          .containsKey("name"); //TODO прогуглить нормальный способ определения
       if (isUser) {
-        data.user = User.fromJson(map);
+        user = User.fromJson(map);
+        _stateStreamController.add(MainScreenCommonState());
+        _areCalculationsButtonsEnabledStreamController.sink.add(true);
         print("user $event parsed");
       }
-      
+
       final isCalculationResult = map.containsKey("calculationType");
       if (isCalculationResult) {
         final calculationResult = CalculationHistory.fromJson(map);
-        data.calculationValue = calculationResult.result.toString();
-        data.isResultDisplayed = true;
-        data.history.add(calculationResult);
-        _stateStreamController.add(data);
+        _calculationValueStreamController.sink
+            .add(calculationResult.result.toString());
+        _isResultDisplayed = true;
+        _calculationType = null;
+        _areDigitsButtonsEnabledStreamController.sink.add(false);
+        addHistory(calculationResult);
       }
 
       final isErrorMessage = map.containsKey("message");
       if (isErrorMessage) {
         ErrorMessage message = ErrorMessage.fromJson(map);
         _showSnack(message.message, true, null, null);
+        _isResultDisplayed = true;
+        _calculationType = null;
+        _calculationValueStreamController.sink.add(_historyList.last.result.toString());
       }
       print(event);
     });
     channel.sink.add(json.encode(User.named(name).toJson()));
-    _stateStreamController.add(MainScreenDataState());
     print(channel);
   }
 
   void addDigit(String digit) {
-    if (data.calculationValue.contains(Strings.DOT) && digit == Strings.DOT) {
+    if (calculationValue.contains(Strings.DOT) && digit == Strings.DOT) {
       return;
     }
-    if (data.isResultDisplayed) {
-      data.calculationValue = digit == Strings.DOT && data.calculationValue.isEmpty ? "0." : digit;
-      data.isResultDisplayed = false;
+    if (_isResultDisplayed) {
+      calculationValue =
+          digit == Strings.DOT && calculationValue.isEmpty ? "0." : digit;
+      _isResultDisplayed = false;
     } else {
-      if (data.calculationValue == Strings.ZERO) {
-        data.calculationValue = digit;
+      if (calculationValue == Strings.ZERO) {
+        calculationValue = digit;
       } else {
-        data.calculationValue += digit == Strings.DOT && data.calculationValue.isEmpty ? "0." : digit;
+        calculationValue +=
+            digit == Strings.DOT && calculationValue.isEmpty ? "0." : digit;
       }
     }
-    _stateStreamController.sink.add(data);
   }
 
   void setCalculationType(CalculationType calculationType) {
-    data.calculationType = calculationType;
-    _stateStreamController.sink.add(data);
-    if (data.isResultDisplayed) {
+    _calculationType = calculationType;
+    _areDigitsButtonsEnabledStreamController.sink.add(true);
+    if (_isResultDisplayed) {
       return;
     }
     calculate();
   }
 
   void calculate() {
-    final calculationJson = CalculationRequest(data.user?.id ?? 0, data.calculationType, double.parse(data.calculationValue)).toJson();
+    final calculationJson = CalculationRequest(
+            user?.id ?? 0, _calculationType, double.parse(calculationValue))
+        .toJson();
     final jsonValue = json.encode(calculationJson);
     print(jsonValue);
     channel.sink.add(jsonValue);
   }
 
-  void _showSnack(String message, bool shouldHide, VoidCallback action, String actionText) {
-    data.snackMessage = message;
-    data.shouldHideSnack = shouldHide;
-    data.snackAction = action;
-    data.snackActionText = actionText;
-    _stateStreamController.sink.add(MainScreenErrorState(data));
-
-
+  void _showSnack(
+      String message, bool shouldHide, VoidCallback action, String actionText) {
+    _snackStreamController.sink
+        .add(SnackData(message, shouldHide, actionText, action));
   }
 
   void removeLastDigit() {
-    if (data.isResultDisplayed) {
+    if (_isResultDisplayed) {
       return;
     }
-    if (data.calculationValue.length <= 1) {
-      data.calculationValue = Strings.ZERO;
+    if (calculationValue.length <= 1) {
+      calculationValue = Strings.ZERO;
     } else {
-      data.calculationValue = data.calculationValue.substring(0, data.calculationValue.length - 1);
+      calculationValue =
+          calculationValue.substring(0, calculationValue.length - 1);
     }
-    _stateStreamController.sink.add(data);
   }
 
   void dispose() {
@@ -108,45 +158,18 @@ class MainBloc {
   }
 }
 
-/*
-  Требования к классу для ошибок
-  1. Должно быть поле для текста
-  2. Должен быть action
-  3. Должен быть выбор - показать на пару секунд или оставить надолго. При тапе на action при этом, поле должно скрываться.
-  4. Должно быть удобно работать с этим всем. 
-*/
-class MainScreenState {
+class MainScreenState {}
+
+class MainScreenCommonState extends MainScreenState {}
+
+class MainScreenIntroState extends MainScreenState {}
+
+class SnackData {
   String snackMessage;
   bool shouldHideSnack;
   VoidCallback snackAction;
   String snackActionText;
 
-  User user;
-  List<CalculationHistory> history = [];
-  CalculationType calculationType;
-  String calculationValue = Strings.ZERO;
-  bool isResultDisplayed = true;
-}
-
-class MainScreenDataState extends MainScreenState {
-  
-}
-
-class MainScreenIntroState extends MainScreenState {
-
-}
-
-class MainScreenErrorState extends MainScreenState {
-  MainScreenErrorState(MainScreenState state) {
-    this.snackMessage = state.snackMessage;
-    this.shouldHideSnack = state.shouldHideSnack;
-    this.snackAction = state.snackAction;
-    this.snackActionText = state.snackActionText;
-
-    this.user = state.user;
-    this.history = state.history;
-    this.calculationType = state.calculationType;
-    this.calculationValue = state.calculationValue;
-    this.isResultDisplayed = state.isResultDisplayed;
-  }
+  SnackData(this.snackMessage, this.shouldHideSnack, this.snackActionText,
+      this.snackAction);
 }
