@@ -106,14 +106,14 @@ class MainBloc {
     }
     if (_isResultDisplayed) {
       calculationValue =
-          digit == Strings.DOT && calculationValue.isEmpty ? "0." : digit;
+          digit == Strings.DOT && calculationValue.isEmpty || calculationValue == Strings.ZERO ? "0." : digit;
       _isResultDisplayed = false;
     } else {
       if (calculationValue == Strings.ZERO) {
         calculationValue = digit;
       } else {
         calculationValue +=
-            digit == Strings.DOT && calculationValue.isEmpty ? "0." : digit;
+            digit == Strings.DOT && calculationValue.isEmpty || calculationValue == Strings.ZERO ? "0." : digit;
       }
     }
   }
