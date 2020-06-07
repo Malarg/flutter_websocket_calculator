@@ -88,10 +88,11 @@ class MainBloc {
       final isErrorMessage = map.containsKey("message");
       if (isErrorMessage) {
         ErrorMessage message = ErrorMessage.fromJson(map);
-        _showSnack(message.message, true, null, null);
+        _showSnack(message.message);
         _isResultDisplayed = true;
         _calculationType = null;
-        _calculationValueStreamController.sink.add(_historyList.last.result.toString());
+        _calculationValueStreamController.sink
+            .add(_historyList.last.result.toString());
       }
       print(event);
     });
@@ -135,10 +136,8 @@ class MainBloc {
     channel.sink.add(jsonValue);
   }
 
-  void _showSnack(
-      String message, bool shouldHide, VoidCallback action, String actionText) {
-    _snackStreamController.sink
-        .add(SnackData(message, shouldHide, actionText, action));
+  void _showSnack(String message) {
+    _snackStreamController.sink.add(SnackData(message));
   }
 
   void removeLastDigit() {
@@ -166,10 +165,6 @@ class MainScreenIntroState extends MainScreenState {}
 
 class SnackData {
   String snackMessage;
-  bool shouldHideSnack;
-  VoidCallback snackAction;
-  String snackActionText;
 
-  SnackData(this.snackMessage, this.shouldHideSnack, this.snackActionText,
-      this.snackAction);
+  SnackData(this.snackMessage);
 }

@@ -21,4 +21,7 @@ class Strings {
   static const String DIVIDE = "/";
   static const String DOT = ".";
   static const String EQUALS = "=";
+  static const String TYPE_NAME = "Введите имя: ";
+  static const String SELECT_NAME = "Выберите имя";
+  static const String OK = "OK";
 }

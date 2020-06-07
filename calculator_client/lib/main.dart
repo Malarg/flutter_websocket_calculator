@@ -70,19 +70,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _showSnack(BuildContext context, SnackData data) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Scaffold.of(context).showSnackBar(SnackBar(
-        content: Text(data.snackMessage),
-        action: SnackBarAction(
-          label: data.snackActionText ?? "",
-          onPressed: data.snackAction ?? () {},
-        ),
-      ));
-
-      if (data.shouldHideSnack) {
-        Future.delayed(Duration(seconds: 2), () {
-          Scaffold.of(context).hideCurrentSnackBar();
-        });
-      }
+      Scaffold.of(context)
+          .showSnackBar(SnackBar(content: Text(data.snackMessage)));
+      Future.delayed(Duration(seconds: 2), () {
+        Scaffold.of(context).hideCurrentSnackBar();
+      });
     });
   }
 
@@ -339,7 +331,7 @@ class _MyHomePageState extends State<MyHomePage> {
               children: <Widget>[
                 Container(
                     width: double.infinity,
-                    child: Text("Введите имя: ", textAlign: TextAlign.start)),
+                    child: Text(Strings.TYPE_NAME, textAlign: TextAlign.start)),
                 TextField(
                   controller: introDialogTextEditingController,
                 )
@@ -348,12 +340,11 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           actions: <Widget>[
             FlatButton(
-              child: Text('OK'),
+              child: Text(Strings.OK),
               onPressed: () {
                 if (userName.isEmpty) {
-                  // todo это логика
                   Scaffold.of(context)
-                      .showSnackBar(SnackBar(content: Text("Выберите имя")));
+                      .showSnackBar(SnackBar(content: Text(Strings.SELECT_NAME)));
                   Future.delayed(Duration(seconds: 2), () {
                     Scaffold.of(context).hideCurrentSnackBar();
                   });
