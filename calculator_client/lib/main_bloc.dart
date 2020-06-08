@@ -60,7 +60,7 @@ class MainBloc {
   IOWebSocketChannel channel;
 
   void connect(String name) async {
-    channel = IOWebSocketChannel.connect("ws://192.168.1.9:8888/connect",
+    channel = IOWebSocketChannel.connect("ws://192.168.0.101:8888/connect",
         headers: {"Authorization": "Bearer $name"});
     channel.stream.listen((event) {
       final map = json.decode(event) as Map<String, dynamic>;
@@ -80,7 +80,6 @@ class MainBloc {
         _calculationValueStreamController.sink
             .add(calculationResult.result.toString());
         _isResultDisplayed = true;
-        _calculationType = null;
         _areDigitsButtonsEnabledStreamController.sink.add(false);
         addHistory(calculationResult);
       }
@@ -90,7 +89,6 @@ class MainBloc {
         ErrorMessage message = ErrorMessage.fromJson(map);
         _showSnack(message.message);
         _isResultDisplayed = true;
-        _calculationType = null;
         _calculationValueStreamController.sink
             .add(_historyList.last.result.toString());
       }
@@ -106,14 +104,14 @@ class MainBloc {
     }
     if (_isResultDisplayed) {
       calculationValue =
-          digit == Strings.DOT && calculationValue.isEmpty || calculationValue == Strings.ZERO ? "0." : digit;
+          digit == Strings.DOT && (calculationValue.isEmpty || calculationValue == Strings.ZERO) ? "0." : digit;
       _isResultDisplayed = false;
     } else {
       if (calculationValue == Strings.ZERO) {
         calculationValue = digit;
       } else {
         calculationValue +=
-            digit == Strings.DOT && calculationValue.isEmpty || calculationValue == Strings.ZERO ? "0." : digit;
+            digit == Strings.DOT && (calculationValue.isEmpty || calculationValue == Strings.ZERO) ? "0." : digit;
       }
     }
   }
@@ -128,6 +126,9 @@ class MainBloc {
   }
 
   void calculate() {
+    if (_calculationType == null) {
+      return;
+    }
     final calculationJson = CalculationRequest(
             user?.id ?? 0, _calculationType, double.parse(calculationValue))
         .toJson();
